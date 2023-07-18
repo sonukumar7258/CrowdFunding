@@ -1,5 +1,3 @@
-# CrowdFunding
-
 # CrowdFunding Smart Contracts
 
 A set of Solidity smart contracts for a decentralized crowdfunding application.
