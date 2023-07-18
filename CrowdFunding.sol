@@ -11,8 +11,8 @@ import {PriceConverter} from "./PriceConverter.sol";
 contract CrowdFunding {
     using PriceConverter for uint256;
 
-    uint256 public mininumUsd = 5e18; // Minimum amount in USD required to participate in the crowdfunding campaign.
-    address public manager; // Address of the manager who deploys and controls the crowdfunding campaign.
+    uint256 public constant MINIMUM_USD = 5e18; // Minimum amount in USD required to participate in the crowdfunding campaign.
+    address immutable i_manager; // Immutable address of the manager who deploys and controls the crowdfunding campaign.
     address[] public funders; // Addresses of participants who funded the campaign.
     mapping(address => uint256) public AddresstoUsdAmount; // Mapping to track the USD amount funded by each participant.
 
@@ -20,22 +20,23 @@ contract CrowdFunding {
      * @dev Constructor function sets the manager's address as the deployer of the contract.
      */
     constructor() {
-        manager = msg.sender;
+        i_manager = msg.sender;
     }
 
     /**
      * @dev Modifier to restrict access to only the manager of the crowdfunding campaign.
      */
     modifier onlyOwner() {
-        require(msg.sender == manager, "Only manager can perform this action");
+        require(msg.sender == i_manager, "Only manager can perform this action");
         _;
     }
 
     /**
      * @dev Allows anyone to fund the crowdfunding campaign by sending ETH with a value equivalent to at least the minimum USD amount.
+     * @notice The contributed amount must be greater than or equal to 5 USD equivalent in ETH.
      */
     function fund() public payable {
-        require(msg.value.getConversionRate() >= mininumUsd, "You have to fund at least 5 USD!");
+        require(msg.value.getConversionRate() >= MINIMUM_USD, "You have to fund at least 5 USD!");
         // Anyone can fund the campaign.
         funders.push(msg.sender);
         AddresstoUsdAmount[msg.sender] += msg.value;
@@ -56,5 +57,18 @@ contract CrowdFunding {
         (bool success, ) = payable(msg.sender).call{value: address(this).balance}("");
         require(success, "Call Failed!");
     }
-}
 
+    /**
+     * @dev Fallback function to handle incoming Ether transfers and automatically fund the campaign.
+     */
+    fallback() external payable {
+        fund();
+    }
+
+    /**
+     * @dev Receive function to handle incoming Ether transfers and automatically fund the campaign.
+     */
+    receive() external payable {
+        fund();
+    }
+}
